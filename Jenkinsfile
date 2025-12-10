@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE_URL = "http://localhost:9000"
+        SONAR_TOKEN = credentials('SONAR_AUTH_TOKEN')
+        SONAR_HOST  = 'http://localhost:9000'
     }
 
     stages {
@@ -15,15 +16,15 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
-                    script {
-                        def scannerHome = tool 'sonar-scanner'
+                script {
+                    def scannerHome = tool 'sonar-scanner'
+                    withEnv(["PATH=${scannerHome}/bin:${env.PATH}"]) {
                         sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                                -Dsonar.projectKey=DevSecOps \
-                                -Dsonar.sources=. \
-                                -Dsonar.host.url=${SONARQUBE_URL} \
-                                -Dsonar.token=$SONAR_TOKEN
+                            sonar-scanner \
+                            -Dsonar.projectKey=DevSecOps \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=${SONAR_HOST} \
+                            -Dsonar.token=${SONAR_TOKEN}
                         """
                     }
                 }
@@ -33,17 +34,24 @@ pipeline {
         stage('OWASP ZAP Scan') {
             steps {
                 script {
-                    echo "[INFO] Starting OWASP ZAP baseline scan..."
 
+                    // Crear carpeta si no existe
+                    sh "mkdir -p zap-reports"
+
+                    // Dar permisos completos para evitar errores
+                    sh "chmod -R 777 zap-reports"
+
+                    // Ejecutar el escaneo
                     sh """
+                        echo "[INFO] Starting OWASP ZAP baseline scan..."
                         docker run --rm --network host \
-                            -v \$WORKSPACE/zap-reports:/zap/wrk \
+                            -v ${env.WORKSPACE}/zap-reports:/zap/wrk/ \
                             ghcr.io/zaproxy/zaproxy:stable \
-                            zap-baseline.py \
-                            --autooff \
-                            -t http://localhost:8081 \
+                            zap-baseline.py -t http://localhost:8081 \
                             -r zap-report.html
                     """
+
+                    echo "ZAP report generated in zap-reports/zap-report.html"
                 }
             }
         }
