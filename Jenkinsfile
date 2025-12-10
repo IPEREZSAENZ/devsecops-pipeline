@@ -31,23 +31,21 @@ pipeline {
             }
         }
 
-        stage('OWASP ZAP Scan') {
-            steps {
-                script {
-                    sh """
-                    echo '[INFO] Starting OWASP ZAP baseline scan...'
+stage('OWASP ZAP Scan') {
+    steps {
+        script {
+            sh """
+            echo '[INFO] Starting OWASP ZAP baseline scan...'
 
-                    docker run --rm \
-                        --network host \
-                        -v ${WORKSPACE}/zap-reports:/zap/wrk/:rw \
-                        ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-                        -t http://localhost:8081 \
-                        -r zap-report.html
+            docker run --rm --network host \
+                -v ${WORKSPACE}/zap-reports:/zap/wrk/ \
+                ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+                -t http://localhost:8081 \
+                -r zap-report.html \
+                -J zap.yaml
 
-                    echo '[INFO] ZAP Scan completed. Report saved in zap-reports/zap-report.html'
-                    """
-                }
-            }
+            echo '[INFO] ZAP Scan completed. Report saved in zap-reports/zap-report.html'
+            """
         }
     }
 }
