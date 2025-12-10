@@ -34,7 +34,6 @@ pipeline {
         stage('OWASP ZAP Scan') {
             steps {
                 script {
-                    // Crear carpeta para los reports
                     sh 'mkdir -p zap-reports'
                     sh 'chmod -R 777 zap-reports'
 
@@ -46,7 +45,7 @@ pipeline {
                         ghcr.io/zaproxy/zaproxy:stable \
                         zap-baseline.py -t http://localhost:8081 \
                         -r zap-report.html \
-                        --exit-code 0
+                        -I
                     """
                 }
             }
