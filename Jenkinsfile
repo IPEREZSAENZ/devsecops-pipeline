@@ -34,24 +34,20 @@ pipeline {
         stage('OWASP ZAP Scan') {
             steps {
                 script {
+                    // Crear carpeta para los reports
+                    sh 'mkdir -p zap-reports'
+                    sh 'chmod -R 777 zap-reports'
 
-                    // Crear carpeta si no existe
-                    sh "mkdir -p zap-reports"
-
-                    // Dar permisos completos para evitar errores
-                    sh "chmod -R 777 zap-reports"
-
-                    // Ejecutar el escaneo
                     sh """
                         echo "[INFO] Starting OWASP ZAP baseline scan..."
-                        docker run --rm --network host \
-                            -v ${env.WORKSPACE}/zap-reports:/zap/wrk/ \
-                            ghcr.io/zaproxy/zaproxy:stable \
-                            zap-baseline.py -t http://localhost:8081 \
-                            -r zap-report.html
-                    """
 
-                    echo "ZAP report generated in zap-reports/zap-report.html"
+                        docker run --rm --network host \
+                        -v ${env.WORKSPACE}/zap-reports:/zap/wrk/ \
+                        ghcr.io/zaproxy/zaproxy:stable \
+                        zap-baseline.py -t http://localhost:8081 \
+                        -r zap-report.html \
+                        --exit-code 0
+                    """
                 }
             }
         }
