@@ -53,3 +53,15 @@ pipeline {
         }
     }
 }
+stage('Dependency Check') {
+    steps {
+        echo "[INFO] Running Dependency-Check on Node project..."
+        dependencyCheck additionalArguments: '''
+            --scan .
+            --enableExperimental
+            --nodeAuditSkipDevDependencies false
+            --nodeAuditAnalyzerEnabled true
+        ''',
+        outdir: 'dependency-check-reports', odcInstallation: 'DC'
+    }
+}
