@@ -7,34 +7,46 @@ pipeline {
     }
 
     stages {
+
+        /* ------------------------------
+         * 1) CHECKOUT DEL REPOSITORIO
+         * ------------------------------ */
         stage('SCM') {
             steps {
                 checkout scm
             }
         }
 
+        /* ------------------------------
+         * 2) ANÁLISIS ESTÁTICO CON SONARQUBE
+         * ------------------------------ */
         stage('SonarQube Analysis') {
             steps {
                 script {
                     def scannerHome = tool 'sonar-scanner'
+
                     withEnv(["PATH=${scannerHome}/bin:${env.PATH}"]) {
                         sh """
                             sonar-scanner \
-                            -Dsonar.projectKey=DevSecOps \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=${SONAR_HOST} \
-                            -Dsonar.token=${SONAR_TOKEN}
+                                -Dsonar.projectKey=DevSecOps \
+                                -Dsonar.sources=. \
+                                -Dsonar.host.url=${SONAR_HOST} \
+                                -Dsonar.token=${SONAR_TOKEN}
                         """
                     }
                 }
             }
         }
 
+        /* ------------------------------
+         * 3) ESCANEO ZAP
+         * ------------------------------ */
         stage('OWASP ZAP Scan') {
             steps {
                 script {
                     sh "mkdir -p zap-reports"
                     sh "chmod -R 777 zap-reports"
+
                     sh """
                         echo "[INFO] Starting OWASP ZAP baseline scan..."
                         docker run --rm --network host \
@@ -44,6 +56,39 @@ pipeline {
                     """
                 }
             }
+            post {
+                always {
+                    publishHTML([
+                        reportDir: 'zap-reports',
+                        reportFiles: 'zap-report.html',
+                        reportName: 'ZAP Security Report'
+                    ])
+                }
+            }
+        }
+
+        /* ------------------------------
+         * 4) OWASP DEPENDENCY CHECK
+         * ------------------------------ */
+        stage('Dependency Check') {
+            steps {
+                script {
+                    sh "mkdir -p dependency-check-reports"
+
+                    sh """
+                        dependency-check.sh \
+                            --project 'DevSecOps' \
+                            --scan . \
+                            --format HTML \
+                            --out dependency-check-reports
+                    """
+                }
+            }
+            post {
+                always {
+                    dependencyCheckPublisher pattern: 'dependency-check-reports/dependency-check-report.html'
+                }
+            }
         }
     }
 
@@ -51,17 +96,5 @@ pipeline {
         always {
             echo "Pipeline finished. Cleaning workspace..."
         }
-    }
-}
-stage('Dependency Check') {
-    steps {
-        echo "[INFO] Running Dependency-Check on Node project..."
-        dependencyCheck additionalArguments: '''
-            --scan .
-            --enableExperimental
-            --nodeAuditSkipDevDependencies false
-            --nodeAuditAnalyzerEnabled true
-        ''',
-        outdir: 'dependency-check-reports', odcInstallation: 'DC'
     }
 }
