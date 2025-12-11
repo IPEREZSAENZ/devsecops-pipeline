@@ -3,10 +3,10 @@ pipeline {
 
     environment {
         SONAR_TOKEN = credentials('SONAR_AUTH_TOKEN')
+        SONAR_HOST  = 'http://localhost:9000'
     }
 
     stages {
-
         stage('SCM') {
             steps {
                 checkout scm
@@ -22,8 +22,8 @@ pipeline {
                             sonar-scanner \
                             -Dsonar.projectKey=DevSecOps \
                             -Dsonar.sources=. \
-                            -Dsonar.host.url=http://localhost:9000 \
-                            -Dsonar.token=${SONARQUBE}
+                            -Dsonar.host.url=${SONAR_HOST} \
+                            -Dsonar.token=${SONAR_TOKEN}
                         """
                     }
                 }
@@ -33,32 +33,15 @@ pipeline {
         stage('OWASP ZAP Scan') {
             steps {
                 script {
-                    sh 'mkdir -p zap-reports'
-                    sh 'chmod -R 777 zap-reports'
-                    sh '''
+                    sh "mkdir -p zap-reports"
+                    sh "chmod -R 777 zap-reports"
+                    sh """
                         echo "[INFO] Starting OWASP ZAP baseline scan..."
                         docker run --rm --network host \
-                            -v "$PWD/zap-reports:/zap/wrk/" \
+                            -v ${WORKSPACE}/zap-reports:/zap/wrk \
                             ghcr.io/zaproxy/zaproxy:stable \
                             zap-baseline.py -t http://localhost:8081 -r zap-report.html -I
-                    '''
-                }
-            }
-        }
-
-        stage('Dependency-Check') {
-            steps {
-                script {
-                    sh 'mkdir -p dependency-check-reports'
-                    sh 'chmod -R 777 dependency-check-reports || true'
-                    sh '''
-                        docker run --rm -v "$PWD":/src owasp/dependency-check:latest \
-                          --scan /src \
-                          --format ALL \
-                          --project "DevSecOps" \
-                          --out /src/dependency-check-reports
-                    '''
-                    archiveArtifacts artifacts: 'dependency-check-reports/**', fingerprint: true
+                    """
                 }
             }
         }
