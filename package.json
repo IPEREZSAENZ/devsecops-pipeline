@@ -1,0 +1,25 @@
+{
+  "name": "pipeline-devsecops",
+  "version": "1.0.0",
+  "description": "Proyecto para pipeline DevSecOps con Jenkins + SonarQube + ZAP",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IPEREZSAENZ/devsecops-pipeline.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/IPEREZSAENZ/devsecops-pipeline/issues"
+  },
+  "homepage": "https://github.com/IPEREZSAENZ/devsecops-pipeline#readme",
+  "dependencies": {
+    "express": "^4.16.0",
+    "jquery": "^3.4.0",
+    "lodash": "^4.17.19"
+  }
+}
