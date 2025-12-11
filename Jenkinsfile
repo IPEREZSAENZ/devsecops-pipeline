@@ -8,18 +8,12 @@ pipeline {
 
     stages {
 
-        /* ------------------------------
-         * 1) CHECKOUT DEL REPOSITORIO
-         * ------------------------------ */
         stage('SCM') {
             steps {
                 checkout scm
             }
         }
 
-        /* ------------------------------
-         * 2) ANÁLISIS ESTÁTICO CON SONARQUBE
-         * ------------------------------ */
         stage('SonarQube Analysis') {
             steps {
                 script {
@@ -38,9 +32,6 @@ pipeline {
             }
         }
 
-        /* ------------------------------
-         * 3) ESCANEO ZAP
-         * ------------------------------ */
         stage('OWASP ZAP Scan') {
             steps {
                 script {
@@ -61,15 +52,15 @@ pipeline {
                     publishHTML([
                         reportDir: 'zap-reports',
                         reportFiles: 'zap-report.html',
-                        reportName: 'ZAP Security Report'
+                        reportName: 'ZAP Security Report',
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true
                     ])
                 }
             }
         }
 
-        /* ------------------------------
-         * 4) OWASP DEPENDENCY CHECK
-         * ------------------------------ */
         stage('Dependency Check') {
             steps {
                 script {
