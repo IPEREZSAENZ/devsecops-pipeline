@@ -39,7 +39,6 @@ pipeline {
                     sh "chmod -R 777 zap-reports"
 
                     sh """
-                        echo "[INFO] Starting OWASP ZAP baseline scan..."
                         docker run --rm --network host \
                             -v ${WORKSPACE}/zap-reports:/zap/wrk \
                             ghcr.io/zaproxy/zaproxy:stable \
@@ -64,20 +63,32 @@ pipeline {
         stage('Dependency Check') {
             steps {
                 script {
+
+                    def dcHome = tool name: 'DC'
+
                     sh "mkdir -p dependency-check-reports"
 
                     sh """
-                        dependency-check.sh \
+                        ${dcHome}/bin/dependency-check.sh \
                             --project 'DevSecOps' \
-                            --scan . \
+                            --scan ${WORKSPACE} \
                             --format HTML \
-                            --out dependency-check-reports
+                            --out dependency-check-reports \
+                            --enableRetired \
+                            --nodeAudit
                     """
                 }
             }
             post {
                 always {
-                    dependencyCheckPublisher pattern: 'dependency-check-reports/dependency-check-report.html'
+                    publishHTML([
+                        reportDir: 'dependency-check-reports',
+                        reportFiles: 'dependency-check-report.html',
+                        reportName: 'Dependency-Check Report',
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true
+                    ])
                 }
             }
         }
