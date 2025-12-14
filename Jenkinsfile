@@ -78,6 +78,7 @@ pipeline {
                           --enableExperimental \
                           --enableRetired \
                           --failOnCVSS 11
+                          --noupdate                          
                     """
                 }
             }
