@@ -41,7 +41,10 @@ pipeline {
                     docker run --rm --network host \
                       -v ${WORKSPACE}/zap-reports:/zap/wrk \
                       ghcr.io/zaproxy/zaproxy:stable \
-                      zap-baseline.py -t http://localhost:8081 -r zap-report.html -I
+                      zap-baseline.py \
+                        -t http://localhost:8081 \
+                        -r zap-report.html \
+                        -I
                 """
             }
             post {
@@ -59,28 +62,23 @@ pipeline {
         }
 
         /* ===========================
-           DEPENDENCY CHECK (FIX FINAL)
+           DEPENDENCY CHECK (FIJO)
            =========================== */
         stage('Dependency Check') {
             steps {
-                script {
-                    // Dependency-Check instalado como Tool en Jenkins
-                    def dcHome = tool 'DC'
+                sh "mkdir -p dependency-check-reports"
 
-                    sh "mkdir -p dependency-check-reports"
-
-                    sh """
-                        ${dcHome}/bin/dependency-check.sh \
-                          --project "DevSecOps" \
-                          --scan . \
-                          --format HTML \
-                          --out dependency-check-reports \
-                          --enableExperimental \
-                          --enableRetired \
-                          --failOnCVSS 11
-                          --noupdate                          
-                    """
-                }
+                sh """
+                    /opt/dependency-check/bin/dependency-check.sh \
+                      --project DevSecOps \
+                      --scan . \
+                      --format HTML \
+                      --out dependency-check-reports \
+                      --enableExperimental \
+                      --enableRetired \
+                      --failOnCVSS 11 \
+                      --noupdate
+                """
             }
             post {
                 always {
