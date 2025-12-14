@@ -34,17 +34,15 @@ pipeline {
 
         stage('OWASP ZAP Scan') {
             steps {
-                script {
-                    sh "mkdir -p zap-reports"
-                    sh "chmod -R 777 zap-reports"
+                sh "mkdir -p zap-reports"
+                sh "chmod -R 777 zap-reports"
 
-                    sh """
-                        docker run --rm --network host \
-                            -v ${WORKSPACE}/zap-reports:/zap/wrk \
-                            ghcr.io/zaproxy/zaproxy:stable \
-                            zap-baseline.py -t http://localhost:8081 -r zap-report.html -I
-                    """
-                }
+                sh """
+                    docker run --rm --network host \
+                        -v ${WORKSPACE}/zap-reports:/zap/wrk \
+                        ghcr.io/zaproxy/zaproxy:stable \
+                        zap-baseline.py -t http://localhost:8081 -r zap-report.html -I
+                """
             }
             post {
                 always {
@@ -60,24 +58,23 @@ pipeline {
             }
         }
 
+        /* ===========================
+           DEPENDENCY CHECK (AÑADIDO)
+           =========================== */
         stage('Dependency Check') {
             steps {
-                script {
+                sh "mkdir -p dependency-check-reports"
 
-                    def dcHome = tool name: 'DC'
-
-                    sh "mkdir -p dependency-check-reports"
-
-                    sh """
-                        ${dcHome}/bin/dependency-check.sh \
-                            --project 'DevSecOps' \
-                            --scan ${WORKSPACE} \
-                            --format HTML \
-                            --out dependency-check-reports \
-                            --enableRetired \
-                            --nodeAudit
-                    """
-                }
+                sh """
+                    dependency-check.sh \
+                      --project "DevSecOps" \
+                      --scan . \
+                      --format HTML \
+                      --out dependency-check-reports \
+                      --enableExperimental \
+                      --enableRetired \
+                      --failOnCVSS 11
+                """
             }
             post {
                 always {
