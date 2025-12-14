@@ -18,15 +18,14 @@ pipeline {
             steps {
                 script {
                     def scannerHome = tool 'sonar-scanner'
-
                     withEnv(["PATH=${scannerHome}/bin:${env.PATH}"]) {
-                        sh """
+                        sh '''
                             sonar-scanner \
                               -Dsonar.projectKey=DevSecOps \
                               -Dsonar.sources=. \
-                              -Dsonar.host.url=${SONAR_HOST} \
-                              -Dsonar.token=${SONAR_TOKEN}
-                        """
+                              -Dsonar.host.url=http://localhost:9000 \
+                              -Dsonar.token=$SONAR_TOKEN
+                        '''
                     }
                 }
             }
@@ -34,18 +33,17 @@ pipeline {
 
         stage('OWASP ZAP Scan') {
             steps {
-                sh "mkdir -p zap-reports"
-                sh "chmod -R 777 zap-reports"
-
-                sh """
+                sh 'mkdir -p zap-reports'
+                sh 'chmod -R 777 zap-reports'
+                sh '''
                     docker run --rm --network host \
-                      -v ${WORKSPACE}/zap-reports:/zap/wrk \
+                      -v $WORKSPACE/zap-reports:/zap/wrk \
                       ghcr.io/zaproxy/zaproxy:stable \
                       zap-baseline.py \
-                        -t http://localhost:8081 \
-                        -r zap-report.html \
-                        -I
-                """
+                      -t http://localhost:8081 \
+                      -r zap-report.html \
+                      -I
+                '''
             }
             post {
                 always {
@@ -53,22 +51,18 @@ pipeline {
                         reportDir: 'zap-reports',
                         reportFiles: 'zap-report.html',
                         reportName: 'ZAP Security Report',
-                        allowMissing: true,
+                        keepAll: true,
                         alwaysLinkToLastBuild: true,
-                        keepAll: true
+                        allowMissing: false
                     ])
                 }
             }
         }
 
-        /* ===========================
-           DEPENDENCY CHECK (FIJO)
-           =========================== */
         stage('Dependency Check') {
             steps {
-                sh "mkdir -p dependency-check-reports"
-
-                sh """
+                sh 'mkdir -p dependency-check-reports'
+                sh '''
                     /opt/dependency-check/bin/dependency-check.sh \
                       --project DevSecOps \
                       --scan . \
@@ -77,9 +71,9 @@ pipeline {
                       --enableExperimental \
                       --enableRetired \
                       --failOnCVSS 11 \
-                      --noupdate
+                      --noupdate \
                       --disableOssIndex
-                """
+                '''
             }
             post {
                 always {
@@ -87,9 +81,9 @@ pipeline {
                         reportDir: 'dependency-check-reports',
                         reportFiles: 'dependency-check-report.html',
                         reportName: 'Dependency-Check Report',
-                        allowMissing: true,
+                        keepAll: true,
                         alwaysLinkToLastBuild: true,
-                        keepAll: true
+                        allowMissing: false
                     ])
                 }
             }
@@ -98,7 +92,7 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline finished."
+            echo 'Pipeline finished.'
         }
     }
 }
