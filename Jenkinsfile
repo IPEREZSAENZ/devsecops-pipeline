@@ -78,6 +78,7 @@ pipeline {
                       --enableRetired \
                       --failOnCVSS 11 \
                       --noupdate
+                      --disableOssIndex
                 """
             }
             post {
